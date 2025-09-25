@@ -1,0 +1,80 @@
+role: "local"
+
+data:
+  input_path: "D:\\he\\bank-full.csv.xlsx"  # 改成你的路径
+  target: "y"
+  file_type: ""
+  test_size: 0.2
+  val_size: 0.25
+  random_state: 35
+  stratify: true
+
+preprocess:
+  drop_cols: ["day", "contact"]
+  binary_map:
+    default: {"no": 0, "yes": 1}
+    housing: {"no": 0, "yes": 1}
+    loan:    {"no": 0, "yes": 1}
+  target_map: {"no": 0, "yes": 1}
+  unknown_fill_cols: ["job", "education"]
+  extreme_clip_cols: ["balance", "duration", "pdays", "previous"]
+  clip_p: 0.99
+  month_col: "month"
+  month_map: {"jan":1,"feb":2,"mar":3,"apr":4,"may":5,"jun":6,"jul":7,"aug":8,"sep":9,"oct":10,"nov":11,"dec":12}
+  scale_feature_range: [-0.5, 0.5]
+  add_engineered_features: true
+  engineered:
+    debt_ratio: true
+    credit_usage: true
+    response_ratio: true
+    high_value_target: true
+    season: true
+    age_balance_interaction: true
+    job_edu_encoded: true
+    age_group: true
+    balance_group: true
+    duration_min: true
+    log_duration: true
+  onehot_like_cols: ["job", "education", "poutcome"]
+
+smote:
+  enabled: true
+  minority_ratio: 0.5
+  k_neighbors_cap: 5
+
+he:
+  enabled: true
+  poly_modulus_degree: 8192
+  coeff_mod_bit_sizes: [40, 21, 21, 21, 21, 40]
+  global_scale_bits: 21
+  add_noise_std: 0.1
+  add_noise_std_update: 0.05
+  batch_size_encrypt: 4096     # 期望的批大小
+  auto_capacity: true          # 实际批大小 = min(batch_size_encrypt, slots//n_features)
+  suppress_warnings: false
+
+train:
+  iterations: 5               # 与 LR2 对齐
+  learning_rate: 0.5           # 与 LR2 对齐
+  batch_size: 512
+  optimizer: "adamw"
+  beta1: 0.9
+  beta2: 0.999
+  epsilon: 1.0e-8
+  weight_decay: 0.001
+  grad_clip_value: 1.0
+  ovr: true
+  he_target_pos_ratio: 0.6     # 加大正类比例，提升 1 类召回
+  he_bias_init: true           # 启用偏置先验初始化
+
+eval:
+  use_threshold_for_prediction: true      # 开启阈值法来提升 1 类召回
+  threshold_search: true
+  threshold_min: -5.0
+  threshold_max: 5.0
+  threshold_points: 200
+  compute_roc: true
+  threshold_objective: "fbeta"  # 以 F_beta 为目标
+  fbeta_beta: 2.0               # beta>1 偏向召回
+  min_precision: 0.1            # 至少保证一定精度
+  positive_class: 1             # 针对 1 类优化阈值
